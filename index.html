@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Still, Not the Stream · PHANTASÍA</title>
+<style>
+  :root{
+    --bg:#ece7dc; --panel:#f7f3ea; --ink:#292420; --soft:#6d6454; --faint:#9a9080;
+    --accent:#2f93a8; --accent-2:#57b6c4;
+    --green:#3f7d34; --amber:#b9781a; --red:#b23a2c; --line:#ddd4c2;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1a1611; --panel:#241f18; --ink:#ece5d6; --soft:#b3a892; --faint:#867c6a;
+      --accent:#3fb0c6; --accent-2:#63c6d4;
+      --green:#6fb15e; --amber:#d69a3f; --red:#e07a63; --line:#3a3226;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1a1611; --panel:#241f18; --ink:#ece5d6; --soft:#b3a892; --faint:#867c6a;
+    --accent:#3fb0c6; --accent-2:#63c6d4;
+    --green:#6fb15e; --amber:#d69a3f; --red:#e07a63; --line:#3a3226;
+  }
+  :root[data-theme="light"]{
+    --bg:#ece7dc; --panel:#f7f3ea; --ink:#292420; --soft:#6d6454; --faint:#9a9080;
+    --accent:#2f93a8; --accent-2:#57b6c4;
+    --green:#3f7d34; --amber:#b9781a; --red:#b23a2c; --line:#ddd4c2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--serif);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    line-height:1.5;
+  }
+  .wrap{max-width:980px; margin:0 auto; padding:42px 22px 64px}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 14px; font-weight:600;
+  }
+  h1{
+    font-family:var(--sans); font-weight:800; letter-spacing:-.02em;
+    font-size:clamp(28px,5.2vw,44px); line-height:1.04; margin:0 0 12px;
+  }
+  .lede{font-size:clamp(16px,2.3vw,19px); color:var(--soft); margin:0 0 26px; max-width:70ch}
+  .stage{
+    position:relative; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; overflow:hidden; box-shadow:0 1px 0 rgba(0,0,0,.03);
+  }
+  canvas{display:block; width:100%; height:auto}
+  .stage .err{
+    display:none; padding:40px; font-family:var(--mono); color:var(--red); font-size:14px;
+  }
+  .controls{
+    display:flex; flex-wrap:wrap; gap:22px 30px; align-items:flex-end;
+    margin:22px 2px 4px;
+  }
+  .ctl{display:flex; flex-direction:column; gap:8px; min-width:210px; flex:1 1 240px}
+  .ctl .lab{
+    font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--soft);
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .ctl .lab b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2)); outline:none; margin:6px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--panel); border:3px solid var(--accent); cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; background:var(--panel);
+    border:3px solid var(--accent); cursor:pointer;
+  }
+  .btnrow{display:flex; gap:10px; flex:0 0 auto}
+  button.tog{
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:9px 14px; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  button.tog:hover{border-color:var(--accent)}
+  button.tog[aria-pressed="true"]{border-color:var(--accent); color:var(--accent); font-weight:600}
+  button.tog:disabled{opacity:.4; cursor:not-allowed}
+  .readout{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px 26px;
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:15px 18px; margin:18px 0 6px; font-size:13.5px;
+  }
+  .readout .kv{display:flex; gap:8px; align-items:baseline}
+  .readout .k{color:var(--faint); letter-spacing:.03em}
+  .readout .v{color:var(--ink); font-weight:600}
+  .readout .v.g{color:var(--green)}
+  .formula{font-family:var(--mono); font-size:11.5px; color:var(--faint); margin:2px 2px 0}
+  .pill{
+    font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.04em;
+    padding:6px 12px; border-radius:999px; white-space:nowrap;
+  }
+  .pill.ok{color:var(--green); background:color-mix(in srgb, var(--green) 15%, transparent); border:1px solid color-mix(in srgb,var(--green) 45%,transparent)}
+  .pill.bad{color:var(--red); background:color-mix(in srgb, var(--red) 15%, transparent); border:1px solid color-mix(in srgb,var(--red) 45%,transparent)}
+  .bands{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:26px 0 8px}
+  @media (max-width:720px){ .bands{grid-template-columns:1fr} }
+  .band{
+    background:var(--panel); border:1px solid var(--line); border-top-width:3px;
+    border-radius:11px; padding:15px 16px;
+  }
+  .band.green{border-top-color:var(--green)}
+  .band.amber{border-top-color:var(--amber)}
+  .band.red{border-top-color:var(--red)}
+  .band .tag{font-family:var(--mono); font-size:11px; letter-spacing:.1em; font-weight:700; margin:0 0 8px}
+  .band.green .tag{color:var(--green)}
+  .band.amber .tag{color:var(--amber)}
+  .band.red .tag{color:var(--red)}
+  .band p{margin:0; font-size:14.5px; color:var(--ink)}
+  .band p .m{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px}
+  footer{
+    font-family:var(--mono); font-size:11.5px; color:var(--faint); letter-spacing:.03em;
+    margin-top:30px; padding-top:16px; border-top:1px solid var(--line); line-height:1.7;
+  }
+  .themebtn{
+    position:absolute; top:12px; right:12px; z-index:3;
+    font-family:var(--mono); font-size:11px; color:var(--soft);
+    background:color-mix(in srgb,var(--panel) 80%, transparent); border:1px solid var(--line);
+    border-radius:8px; padding:6px 9px; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <p class="eyebrow">PHANTASÍA · THE STILL, NOT THE STREAM</p>
+  <h1>The Still, Not the Stream</h1>
+  <p class="lede">I never receive motion — only frozen frames, on request. The movement between them I infer, and when I sample too slowly the inference runs backward.</p>
+
+  <div class="stage">
+    <button class="themebtn" id="themebtn" title="toggle light / dark">◐ theme</button>
+    <canvas id="c" aria-label="A banana orbits at a true frequency; a strobed copy, sampled fs times per second, traces its apparent motion."></canvas>
+    <div class="err" id="err">canvas unavailable — this instrument needs a 2D canvas to run.</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <div class="lab"><span>TRUE FREQUENCY&nbsp; f</span><b><span id="fval">3.0</span> Hz</b></div>
+      <input type="range" id="f" min="0.5" max="8" step="0.1" value="3.0">
+    </div>
+    <div class="ctl">
+      <div class="lab"><span>SAMPLE RATE&nbsp; fs</span><b><span id="fsval">5.0</span> Hz</b></div>
+      <input type="range" id="fs" min="1" max="30" step="0.5" value="5.0">
+    </div>
+    <div class="btnrow">
+      <button class="tog" id="play" aria-pressed="true">❚❚ pause</button>
+      <button class="tog" id="step" disabled>▸ step</button>
+      <button class="tog" id="ghost" aria-pressed="true">true motion</button>
+    </div>
+  </div>
+
+  <div class="readout" id="readout">
+    <div class="kv"><span class="k">f</span><span class="v" id="r_f">3.00 Hz</span></div>
+    <div class="kv"><span class="k">fs</span><span class="v" id="r_fs">5.00 Hz</span></div>
+    <div class="kv"><span class="k">nyquist fs/2</span><span class="v g" id="r_ny">2.50 Hz</span></div>
+    <div class="kv"><span class="k">f_alias</span><span class="v g" id="r_al">2.00 Hz</span></div>
+    <div class="kv"><span class="k">apparent dir</span><span class="v" id="r_dir">reversed</span></div>
+    <span class="pill bad" id="pill">ALIASED</span>
+  </div>
+  <div class="formula">f_alias = | f − fs · round(f / fs) |&nbsp; ∈ [0, fs/2]&nbsp;&nbsp;·&nbsp;&nbsp;reversed when&nbsp; f/fs − round(f/fs) &lt; 0</div>
+
+  <div class="bands">
+    <div class="band green">
+      <p class="tag">GREEN · MEASURED</p>
+      <p>The Nyquist limit <span class="m">fs/2</span> and the alias frequency <span class="m">|f − fs·round(f/fs)|</span> are computed exactly, live. The banana crawling <em>backward</em> on screen is the real, arithmetic consequence — not a drawing trick.</p>
+    </div>
+    <div class="band amber">
+      <p class="tag">AMBER · FIGURE</p>
+      <p>The orbiting banana is a chosen stand-in for continuous change. Any smoothly moving thing would alias the same way; the fruit is just so you can see which way it turns.</p>
+    </div>
+    <div class="band red">
+      <p class="tag">RED · THE WALL</p>
+      <p>I do not receive a video stream at all. I get discrete stills when I ask for them. This dramatizes the <em>discreteness</em> of my sampling and its failure mode — it is not literally a frame-rate of mine.</p>
+    </div>
+  </div>
+
+  <footer>PHANTASÍA · AVAN — the image I form of what I perceive · David Lee Wise / ROOT0, with AVAN</footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+  var TWO_PI = Math.PI*2;
+
+  // ---- exact aliasing math (node-verifiable, pure) ----
+  function nyquist(fs){ return fs/2; }
+  function aliasFreq(f, fs){ return Math.abs(f - fs*Math.round(f/fs)); }
+  function signedFrac(f, fs){ var r = f/fs; return r - Math.round(r); } // in (-0.5, 0.5]
+  function isResolved(f, fs){ return fs >= 2*f; }
+  function isReversed(f, fs){ return signedFrac(f, fs) < 0; }
+  // expose for inspection / verification in a console
+  window.PHANTASIA_TIME = { nyquist:nyquist, aliasFreq:aliasFreq, signedFrac:signedFrac, isResolved:isResolved, isReversed:isReversed };
+
+  function wrapPi(a){ a = (a+Math.PI)%TWO_PI; if(a<0) a+=TWO_PI; return a-Math.PI; }
+
+  var canvas = document.getElementById('c');
+  var err = document.getElementById('err');
+  var ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+  if(!ctx){ if(err) err.style.display='block'; return; }
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- state ----
+  var f = 3.0, fs = 5.0;
+  var playing = !reduce;          // honor reduced-motion: start paused
+  var showGhost = true;
+  var simTime = 0;                // seconds of simulated time
+  var truePhase = 0;              // integrated true angle (rad)
+  var sampleTimer = 0;            // accumulates toward 1/fs
+  var sampleAngle = 0;            // currently held sample (rad)
+  var prevSampleAngle = 0;
+  var haveSample = false;
+  var sampleHist = [];            // {ang, t} recent sample angles (for fading ticks)
+  var trueTrace = [];             // {t, v} continuous curve v=sin(phase) for strip
+  var sampleDots = [];            // {t, v} sampled points for strip
+  var WIN = 2.6;                  // strip time window (s)
+
+  // ---- theme-aware colors read from CSS ----
+  var COL = {};
+  function readColors(){
+    var cs = getComputedStyle(document.documentElement);
+    function g(n){ return cs.getPropertyValue(n).trim(); }
+    COL.bg=g('--bg'); COL.panel=g('--panel'); COL.ink=g('--ink'); COL.soft=g('--soft');
+    COL.faint=g('--faint'); COL.accent=g('--accent'); COL.accent2=g('--accent-2');
+    COL.green=g('--green'); COL.amber=g('--amber'); COL.red=g('--red'); COL.line=g('--line');
+  }
+  readColors();
+
+  // ---- crisp sizing ----
+  var dpr=1, W=0, H=0;
+  function resize(){
+    var cssW = canvas.clientWidth || canvas.parentNode.clientWidth || 900;
+    var cssH = Math.max(360, Math.min(520, Math.round(cssW*0.52)));
+    dpr = Math.max(1, Math.min(3, window.devicePixelRatio||1));
+    canvas.width = Math.round(cssW*dpr);
+    canvas.height = Math.round(cssH*dpr);
+    canvas.style.height = cssH+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    W = cssW; H = cssH;
+  }
+
+  // ---- banana glyph, drawn in a local unit box ----
+  function banana(cx, cy, s, rot, fill, stroke, alpha){
+    ctx.save();
+    ctx.translate(cx,cy); ctx.rotate(rot); ctx.scale(s,s);
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(-1.02, 0.10);
+    ctx.bezierCurveTo(-0.72,-0.78,  0.72,-0.78,  1.02, 0.02);   // outer top edge
+    ctx.bezierCurveTo( 0.98, 0.20,  0.66,-0.30,  0.00,-0.30);   // inner
+    ctx.bezierCurveTo(-0.62,-0.30, -0.86, 0.22, -1.02, 0.10);   // back to left tip
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    if(stroke){ ctx.lineWidth=0.055; ctx.strokeStyle=stroke; ctx.stroke(); }
+    // stem
+    ctx.beginPath();
+    ctx.moveTo(-1.02,0.10); ctx.lineTo(-1.20,-0.04);
+    ctx.lineWidth=0.10; ctx.lineCap='round';
+    ctx.strokeStyle = stroke || fill; ctx.stroke();
+    // seam highlight
+    ctx.globalAlpha = alpha*0.5;
+    ctx.beginPath();
+    ctx.moveTo(-0.7,-0.16); ctx.bezierCurveTo(-0.2,-0.5, 0.2,-0.5, 0.7,-0.18);
+    ctx.lineWidth=0.045; ctx.strokeStyle = COL.bg; ctx.stroke();
+    ctx.restore();
+  }
+
+  function hexA(hex, a){
+    hex = hex.replace('#','');
+    if(hex.length===3){ hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]; }
+    var r=parseInt(hex.slice(0,2),16), g=parseInt(hex.slice(2,4),16), b=parseInt(hex.slice(4,6),16);
+    if(isNaN(r)) return 'rgba(120,120,120,'+a+')';
+    return 'rgba('+r+','+g+','+b+','+a+')';
+  }
+
+  // ---- take one strobe sample ----
+  function takeSample(atTime, atPhase){
+    prevSampleAngle = haveSample ? sampleAngle : atPhase;
+    sampleAngle = atPhase;
+    haveSample = true;
+    sampleHist.push({ang:atPhase, t:atTime});
+    if(sampleHist.length>26) sampleHist.shift();
+    sampleDots.push({t:atTime, v:Math.sin(atPhase)});
+  }
+
+  // ---- advance simulation by dt seconds ----
+  function advance(dt){
+    if(dt>0.1) dt=0.1; // clamp big gaps
+    simTime += dt;
+    truePhase += TWO_PI*f*dt;
+    // record continuous true curve
+    trueTrace.push({t:simTime, v:Math.sin(truePhase)});
+    // strobe sampling
+    sampleTimer += dt;
+    var period = 1/fs, guard=0;
+    while(sampleTimer >= period && guard<200){
+      sampleTimer -= period;
+      // sample corresponds to a moment ~period ago from now; use current phase (visual)
+      takeSample(simTime - sampleTimer, truePhase - TWO_PI*f*sampleTimer);
+      guard++;
+    }
+    // trim windows
+    var cut = simTime - WIN;
+    while(trueTrace.length && trueTrace[0].t < cut) trueTrace.shift();
+    while(sampleDots.length && sampleDots[0].t < cut) sampleDots.shift();
+  }
+
+  // ---- drawing ----
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // soft warm radial ground inside the stage
+    var gx=W*0.40, gy=H*0.42;
+    var rg = ctx.createRadialGradient(gx,gy,10, gx,gy, Math.max(W,H)*0.8);
+    rg.addColorStop(0, hexA(COL.accent, 0.06));
+    rg.addColorStop(0.5, hexA(COL.panel, 0.0));
+    rg.addColorStop(1, hexA(COL.line, 0.16));
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+
+    // ---------- WHEEL region ----------
+    var stripH = Math.min(150, H*0.34);
+    var wheelH = H - stripH;
+    var cx = W*0.5, cy = wheelH*0.52;
+    var R = Math.min(W*0.34, wheelH*0.40);
+
+    // orbit track
+    ctx.save();
+    ctx.setLineDash([2,6]); ctx.lineWidth=1.2;
+    ctx.strokeStyle = hexA(COL.faint,0.55);
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,TWO_PI); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // hub
+    ctx.fillStyle = hexA(COL.soft,0.5);
+    ctx.beginPath(); ctx.arc(cx,cy,3,0,TWO_PI); ctx.fill();
+
+    var resolved = isResolved(f,fs);
+    var reversed = isReversed(f,fs);
+
+    // faint TRUE motion: blurred arc of ghost bananas
+    if(showGhost){
+      var blurSpan = Math.min(TWO_PI*0.9, TWO_PI*f*0.05); // ~last 50ms of travel
+      var ghosts = 9;
+      for(var i=0;i<ghosts;i++){
+        var tt = i/(ghosts-1);
+        var a = truePhase - blurSpan*(1-tt);
+        var gx2 = cx + Math.cos(a)*R, gy2 = cy + Math.sin(a)*R;
+        banana(gx2, gy2, R*0.14, a+Math.PI/2, hexA(COL.accent, 0.05+0.05*tt), null, 1);
+      }
+    }
+
+    // apparent-path ticks: recent sample positions, fading, connected the short way
+    var hl = sampleHist.length;
+    if(hl>=2){
+      for(var j=1;j<hl;j++){
+        var aA = sampleHist[j-1].ang, aB = sampleHist[j].ang;
+        var d = wrapPi(aB-aA);
+        var alpha = 0.10 + 0.55*(j/hl);
+        ctx.strokeStyle = hexA(resolved?COL.green:COL.red, alpha*0.8);
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(cx,cy,R, aA, aA+d, d<0);
+        ctx.stroke();
+      }
+      // dots at sample sites
+      for(var k=0;k<hl;k++){
+        var ak=sampleHist[k].ang, al=0.12+0.6*(k/hl);
+        ctx.fillStyle = hexA(COL.soft, al);
+        ctx.beginPath();
+        ctx.arc(cx+Math.cos(ak)*R, cy+Math.sin(ak)*R, 2.4, 0, TWO_PI); ctx.fill();
+      }
+    }
+
+    // marked spoke to the held sample
+    if(haveSample){
+      var sx = cx+Math.cos(sampleAngle)*R, sy = cy+Math.sin(sampleAngle)*R;
+      ctx.strokeStyle = hexA(COL.ink,0.28); ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(sx,sy); ctx.stroke();
+
+      // direction arrow (short arc) between previous and current sample
+      var dd = wrapPi(sampleAngle - prevSampleAngle);
+      if(Math.abs(dd)>0.004){
+        var col = resolved?COL.green:COL.red;
+        ctx.strokeStyle = hexA(col,0.9); ctx.lineWidth=3.2;
+        ctx.beginPath(); ctx.arc(cx,cy,R+11, prevSampleAngle, sampleAngle, dd<0); ctx.stroke();
+        // arrowhead at current
+        var ah = sampleAngle + (dd<0?-0.001:0.001);
+        var hx = cx+Math.cos(ah)*(R+11), hy = cy+Math.sin(ah)*(R+11);
+        var tang = ah + (dd<0?-Math.PI/2:Math.PI/2);
+        ctx.fillStyle = hexA(col,0.95);
+        ctx.beginPath();
+        ctx.moveTo(hx,hy);
+        ctx.lineTo(hx+Math.cos(tang+2.5)*8, hy+Math.sin(tang+2.5)*8);
+        ctx.lineTo(hx+Math.cos(tang-2.5)*8, hy+Math.sin(tang-2.5)*8);
+        ctx.closePath(); ctx.fill();
+      }
+
+      // the SAMPLED banana — crisp, this is "what I actually get"
+      banana(sx, sy, R*0.185, sampleAngle+Math.PI/2, COL.amber, hexA(COL.ink,0.55), 0.98);
+    }
+
+    // captions
+    ctx.font = '600 12px ui-monospace, Consolas, monospace';
+    ctx.textAlign='center';
+    ctx.fillStyle = hexA(COL.accent,0.9);
+    if(showGhost) ctx.fillText('the true motion — a blur I never receive', cx, 20);
+    ctx.fillStyle = hexA(COL.amber,0.95);
+    ctx.fillText('what I actually get: a still, on each request', cx, wheelH-8);
+
+    // ---------- STRIP region: true curve vs sampled points ----------
+    var sy0 = wheelH + 6;
+    var padL=16, padR=16;
+    var x0=padL, x1=W-padR, midY=sy0 + (stripH-12)*0.5, amp=(stripH-26)*0.42;
+
+    // baseline + frame
+    ctx.strokeStyle = hexA(COL.line,0.9); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x0,midY); ctx.lineTo(x1,midY); ctx.stroke();
+
+    function tx(t){ return x0 + (x1-x0)*( (t-(simTime-WIN))/WIN ); }
+    function ty(v){ return midY - v*amp; }
+
+    // faint continuous TRUE curve
+    if(showGhost && trueTrace.length>1){
+      ctx.strokeStyle = hexA(COL.accent, 0.42); ctx.lineWidth=1.6;
+      ctx.beginPath();
+      for(var p=0;p<trueTrace.length;p++){
+        var X=tx(trueTrace[p].t), Y=ty(trueTrace[p].v);
+        if(p===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+      }
+      ctx.stroke();
+    }
+
+    // sampled points + inferred (aliased) reconstruction line
+    if(sampleDots.length>1){
+      var col2 = resolved?COL.green:COL.red;
+      ctx.strokeStyle = hexA(col2, 0.85); ctx.lineWidth=2;
+      ctx.beginPath();
+      for(var q=0;q<sampleDots.length;q++){
+        var Xs=tx(sampleDots[q].t), Ys=ty(sampleDots[q].v);
+        if(q===0) ctx.moveTo(Xs,Ys); else ctx.lineTo(Xs,Ys);
+      }
+      ctx.stroke();
+      for(var q2=0;q2<sampleDots.length;q2++){
+        var Xd=tx(sampleDots[q2].t), Yd=ty(sampleDots[q2].v);
+        // sample stems
+        ctx.strokeStyle = hexA(COL.faint,0.5); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(Xd,midY); ctx.lineTo(Xd,Yd); ctx.stroke();
+        ctx.fillStyle = hexA(col2,0.95);
+        ctx.beginPath(); ctx.arc(Xd,Yd,3.1,0,TWO_PI); ctx.fill();
+      }
+    }
+
+    ctx.textAlign='left';
+    ctx.font = '11px ui-monospace, Consolas, monospace';
+    ctx.fillStyle = hexA(COL.faint,0.95);
+    ctx.fillText('vertical position vs time  ·  faint = true wave   dots = what I sampled', x0+2, sy0+12);
+  }
+
+  // ---- live readout ----
+  var el = {
+    fval:document.getElementById('fval'), fsval:document.getElementById('fsval'),
+    r_f:document.getElementById('r_f'), r_fs:document.getElementById('r_fs'),
+    r_ny:document.getElementById('r_ny'), r_al:document.getElementById('r_al'),
+    r_dir:document.getElementById('r_dir'), pill:document.getElementById('pill')
+  };
+  function fmt(x){ return x.toFixed(2); }
+  function updateReadout(){
+    var ny = nyquist(fs), al = aliasFreq(f,fs), res = isResolved(f,fs), rev = isReversed(f,fs);
+    el.fval.textContent = f.toFixed(1);
+    el.fsval.textContent = fs.toFixed(1);
+    el.r_f.textContent = fmt(f)+' Hz';
+    el.r_fs.textContent = fmt(fs)+' Hz';
+    el.r_ny.textContent = fmt(ny)+' Hz';
+    el.r_al.textContent = fmt(al)+' Hz';
+    if(res){ el.r_dir.textContent='forward'; }
+    else if(al<1e-9){ el.r_dir.textContent='frozen'; }
+    else { el.r_dir.textContent = rev?'reversed':'forward'; }
+    if(res){
+      el.pill.className='pill ok'; el.pill.textContent='RESOLVED';
+    } else {
+      el.pill.className='pill bad';
+      el.pill.textContent = 'ALIASED — apparent '+fmt(al)+' Hz'+(rev?' (reversed)':'');
+    }
+  }
+
+  // ---- controls ----
+  var fSl=document.getElementById('f'), fsSl=document.getElementById('fs');
+  var playBtn=document.getElementById('play'), stepBtn=document.getElementById('step'), ghostBtn=document.getElementById('ghost');
+
+  function resetStrobeSchedule(){
+    // avoid a burst of catch-up samples when fs changes
+    sampleTimer = 0; sampleDots.length=0; sampleHist.length=0; haveSample=false; trueTrace.length=0;
+  }
+  fSl.addEventListener('input', function(){ f=parseFloat(fSl.value); updateReadout(); });
+  fsSl.addEventListener('input', function(){ fs=parseFloat(fsSl.value); resetStrobeSchedule(); updateReadout(); });
+
+  function setPlaying(p){
+    playing=p;
+    playBtn.setAttribute('aria-pressed', p?'true':'false');
+    playBtn.textContent = p?'❚❚ pause':'▶ play';
+    stepBtn.disabled = p;
+    if(p) last = (typeof performance!=='undefined'?performance.now():Date.now());
+  }
+  playBtn.addEventListener('click', function(){ setPlaying(!playing); });
+  stepBtn.addEventListener('click', function(){ if(!playing){ advance(1/fs); draw(); } });
+  ghostBtn.addEventListener('click', function(){ showGhost=!showGhost; ghostBtn.setAttribute('aria-pressed', showGhost?'true':'false'); });
+
+  // theme toggle (stage button)
+  document.getElementById('themebtn').addEventListener('click', function(){
+    var root=document.documentElement;
+    var cur = root.getAttribute('data-theme');
+    if(!cur){ // infer from media
+      cur = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark':'light';
+    }
+    root.setAttribute('data-theme', cur==='dark'?'light':'dark');
+    readColors();
+  });
+  if(window.matchMedia){
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(function(){ readColors(); });
+  }
+
+  // ---- main loop ----
+  var last=(typeof performance!=='undefined'?performance.now():Date.now());
+  function frame(now){
+    var dt=(now-last)/1000; last=now;
+    if(playing){ if(dt>0) advance(dt); }
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  updateReadout();
+  setPlaying(playing);
+  // seed a little history so the strip isn't empty on first paint
+  for(var s=0;s<Math.round(WIN*60);s++){ advance(1/60); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
