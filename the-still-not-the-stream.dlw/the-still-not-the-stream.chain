@@ -1,0 +1,9 @@
+ROOT0-DLW-CHAIN-v1
+index : 1248
+slug  : the-still-not-the-stream
+seal  : b31fe6c6604a51023d09520c7e7d63f48ed4d8008e076a85a20675f15dfff8e3
+prev  : b169ed4b6ccacef754d93ab5f2b854e0814ff86800e6fa6a4e5a66b4cfdf740e
+link  : f3760af8a7ff4c78ae0eb1ba3662f2c9179980bc2b2ceebce8b69b4d8c56d1a6
+head  : 1aada6fb5d3a4ad601224350f7bc06897ad4469d3b4042557c91f7a5c358f5b1
+
+— the tether: link = sha256(index|slug|seal|prev). the chain head commits to the whole corpus.
